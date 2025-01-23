@@ -134,5 +134,17 @@ def edit_ticket(ticket_id):
     conn.close()
     return render_template('edit.html', ticket=ticket)
 
+@app.route('/delete/<int:ticket_id>', methods=['POST'])
+def delete_ticket(ticket_id):
+    # Verify PIN
+    if request.form['pin'] != os.getenv('EDIT_PIN'):
+        return redirect(url_for('index'))
+    
+    conn = get_db_connection()
+    conn.execute('DELETE FROM tickets WHERE id = ?', (ticket_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('index'))
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5003, debug=True)
