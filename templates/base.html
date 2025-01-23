@@ -27,14 +27,22 @@
                 if (Notification.permission === 'granted') {
                     notificationButton.textContent = '🔔 Notifications Enabled';
                     notificationButton.disabled = true;
+                    notificationButton.title = '';
+                } else if (Notification.permission === 'denied') {
+                    notificationButton.textContent = '🔔 Notifications Blocked';
+                    notificationButton.disabled = true;
+                    notificationButton.title = 'Permission is blocked in browser settings. Reset in page info.';
                 } else {
                     notificationButton.textContent = '🔔 Enable Notifications';
                     notificationButton.disabled = false;
+                    notificationButton.title = 'Click to enable browser notifications';
                 }
             }
             
             notificationButton.addEventListener('click', () => {
-                Notification.requestPermission().then(updateButton);
+                if (Notification.permission === 'default') {
+                    Notification.requestPermission().then(updateButton);
+                }
             });
             
             document.body.appendChild(notificationButton);
