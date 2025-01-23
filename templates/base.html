@@ -27,7 +27,7 @@
                 if (Notification.permission === 'granted') {
                     notificationButton.textContent = '🔔 Notifications Enabled';
                     notificationButton.disabled = true;
-                    notificationButton.title = '';
+                    notificationButton.title = 'Browser notifications are enabled';
                 } else if (Notification.permission === 'denied') {
                     notificationButton.textContent = '🔔 Notifications Blocked';
                     notificationButton.disabled = true;
@@ -57,32 +57,60 @@
             
             // Connect to SSE
             let eventSource;
+            let reconnectAttempts = 0;
+            const maxReconnectDelay = 5000;
             
             function connectSSE() {
+                if (eventSource) {
+                    eventSource.close();
+                }
+                
                 eventSource = new EventSource('/events');
                 
+                eventSource.onopen = function() {
+                    console.log('SSE connection established');
+                    reconnectAttempts = 0;
+                };
+                
                 eventSource.onmessage = function(event) {
-                    const data = JSON.parse(event.data);
-                    
-                    if (Notification.permission === 'granted') {
-                        const notification = new Notification(`Ticket #${data.id}: ${data.title}`, {
-                            body: data.message,
-                            icon: '/static/images/favicon.svg'
-                        });
+                    try {
+                        const data = JSON.parse(event.data);
                         
-                        notification.onclick = function() {
-                            window.focus();
-                            this.close();
-                        };
+                        if (Notification.permission === 'granted') {
+                            const notification = new Notification(`Ticket #${data.id}: ${data.title}`, {
+                                body: data.message,
+                                icon: '/static/images/favicon.svg',
+                                tag: `ticket-${data.id}`,
+                                requireInteraction: true
+                            });
+                            
+                            notification.onclick = function() {
+                                window.focus();
+                                window.location.href = '/';
+                                this.close();
+                            };
+                        }
+                    } catch (error) {
+                        console.error('Error processing notification:', error);
                     }
                 };
                 
-                eventSource.onerror = function() {
+                eventSource.onerror = function(error) {
+                    console.error('SSE connection error:', error);
                     eventSource.close();
-                    setTimeout(connectSSE, 1000);  // Reconnect after 1s
+                    
+                    const reconnectDelay = Math.min(1000 * Math.pow(2, reconnectAttempts), maxReconnectDelay);
+                    reconnectAttempts++;
+                    
+                    console.log(`Attempting to reconnect in ${reconnectDelay}ms...`);
+                    setTimeout(connectSSE, reconnectDelay);
                 };
             }
-            connectSSE();
+            
+            // Start SSE connection if notifications are supported
+            if ('Notification' in window) {
+                connectSSE();
+            }
         });
     </script>
 </body>
