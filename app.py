@@ -38,10 +38,20 @@ def index():
         urgency = request.form['urgency']
         
         conn = get_db_connection()
-        conn.execute('INSERT INTO tickets (project_name, materials, urgency) VALUES (?, ?, ?)',
+        cursor = conn.cursor()
+        cursor.execute('INSERT INTO tickets (project_name, materials, urgency) VALUES (?, ?, ?)',
                      (project_name, materials, urgency))
+        ticket_id = cursor.lastrowid
         conn.commit()
+        
+        # Get the created ticket
+        ticket = conn.execute('SELECT * FROM tickets WHERE id = ?', (ticket_id,)).fetchone()
+        ticket_dict = dict(ticket)
         conn.close()
+        
+        # Send email notification
+        from utils.email_sender import send_ticket_notification
+        send_ticket_notification(ticket_dict)
         return redirect(url_for('index'))
     
     conn = get_db_connection()
