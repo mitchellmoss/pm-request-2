@@ -1,3 +1,5 @@
+import json
+import threading
 from flask import Flask, render_template, request, redirect, url_for, Response
 from datetime import datetime
 import sqlite3
@@ -46,23 +48,26 @@ def events():
             while True:
                 data = listener.get_data()
                 if data:
-                    yield f"data: {data}\n\n"
-        finally:
+                    yield f"data: {json.dumps(data)}\n\n"
+                else:  # Send heartbeat
+                    yield ":heartbeat\n\n"
+        except GeneratorExit:
             listeners.remove(listener)
-    
-    return Response(event_stream(), mimetype="text/event-stream")
+        return Response(event_stream(), mimetype="text/event-stream")
 
 class sse_generator:
     def __init__(self):
         self.queue = []
-    
+        self.event = threading.Event()
+
     def send_sse_data(self, data):
         self.queue.append(data)
-    
+        self.event.set()
+
     def get_data(self):
-        while not self.queue:
-            pass  # Wait for data
-        return self.queue.pop(0)
+        self.event.wait(timeout=10)
+        self.event.clear()
+        return self.queue.pop(0) if self.queue else None
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
