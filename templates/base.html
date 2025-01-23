@@ -52,24 +52,28 @@
             function connectSSE() {
                 eventSource = new EventSource('/events');
                 
+                eventSource.onmessage = function(event) {
+                    const data = JSON.parse(event.data);
+                    
+                    if (Notification.permission === 'granted') {
+                        const notification = new Notification(`Ticket #${data.id}: ${data.title}`, {
+                            body: data.message,
+                            icon: '/static/images/favicon.svg'
+                        });
+                        
+                        notification.onclick = function() {
+                            window.focus();
+                            this.close();
+                        };
+                    }
+                };
+                
                 eventSource.onerror = function() {
                     eventSource.close();
                     setTimeout(connectSSE, 1000);  // Reconnect after 1s
                 };
-                const data = JSON.parse(event.data);
-                
-                if (Notification.permission === 'granted') {
-                    const notification = new Notification(`Ticket #${data.id}: ${data.title}`, {
-                        body: data.message,
-                        icon: '/static/images/favicon.svg'
-                    });
-                    
-                    notification.onclick = function() {
-                        window.focus();
-                        this.close();
-                    };
-                }
-            };
+            }
+            connectSSE();
         });
     </script>
 </body>
