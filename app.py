@@ -53,7 +53,8 @@ def events():
                     yield ":heartbeat\n\n"
         except GeneratorExit:
             listeners.remove(listener)
-        return Response(event_stream(), mimetype="text/event-stream")
+    
+    return Response(event_stream(), mimetype="text/event-stream")
 
 class sse_generator:
     def __init__(self):
