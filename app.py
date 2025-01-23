@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, Response
 from datetime import datetime
 import sqlite3
 import os
@@ -30,6 +30,40 @@ with app.app_context():
     conn.commit()
     conn.close()
 
+# Keep track of event listeners
+listeners = set()
+
+def notify_listeners(ticket):
+    for listener in listeners:
+        listener.send_sse_data(ticket)
+
+@app.route('/events')
+def events():
+    def event_stream():
+        listener = sse_generator()
+        listeners.add(listener)
+        try:
+            while True:
+                data = listener.get_data()
+                if data:
+                    yield f"data: {data}\n\n"
+        finally:
+            listeners.remove(listener)
+    
+    return Response(event_stream(), mimetype="text/event-stream")
+
+class sse_generator:
+    def __init__(self):
+        self.queue = []
+    
+    def send_sse_data(self, data):
+        self.queue.append(data)
+    
+    def get_data(self):
+        while not self.queue:
+            pass  # Wait for data
+        return self.queue.pop(0)
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -52,6 +86,11 @@ def index():
         # Send email notification
         from utils.email_sender import send_ticket_notification
         send_ticket_notification(ticket_dict)
+        notify_listeners({
+            'id': ticket_dict['id'],
+            'title': ticket_dict['project_name'],
+            'message': f"New ticket created: {ticket_dict['project_name']}"
+        })
         return redirect(url_for('index'))
     
     conn = get_db_connection()
