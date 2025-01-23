@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="card">
+        <div class="card-body">
+            <h2 class="card-title mb-4">Edit Request</h2>
+            <form method="POST">
+                <div class="mb-3">
+                    <label class="form-label">Project Name</label>
+                    <input type="text" class="form-control" name="project_name" value="{{ ticket['project_name'] }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Materials Needed</label>
+                    <textarea class="form-control" name="materials" rows="3" required>{{ ticket['materials'] }}</textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Urgency</label>
+                    <select class="form-select" name="urgency" required>
+                        <option value="Low" {% if ticket.urgency == 'Low' %}selected{% endif %}>Low</option>
+                        <option value="Medium" {% if ticket.urgency == 'Medium' %}selected{% endif %}>Medium</option>
+                        <option value="High" {% if ticket.urgency == 'High' %}selected{% endif %}>High</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" name="status" required>
+                        <option value="Pending" {% if ticket.status == 'Pending' %}selected{% endif %}>Pending</option>
+                        <option value="In Progress" {% if ticket.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                        <option value="Completed" {% if ticket.status == 'Completed' %}selected{% endif %}>Completed</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Edit PIN</label>
+                    <input type="password" class="form-control" name="pin" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+{% endblock %}
