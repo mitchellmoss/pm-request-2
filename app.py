@@ -49,8 +49,9 @@ def events():
                 data = listener.get_data()
                 if data:
                     yield f"data: {json.dumps(data)}\n\n"
+                    yield "\n"  # Add extra newline for proper event formatting
                 else:  # Send heartbeat
-                    yield ":heartbeat\n\n"
+                    yield "data: :heartbeat\n\n"
         except GeneratorExit:
             listeners.remove(listener)
     
@@ -147,4 +148,4 @@ def delete_ticket(ticket_id):
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5003, debug=True)
+    app.run(host='0.0.0.0', port=5003, debug=True, ssl_context=('cert.pem', 'key.pem'))
