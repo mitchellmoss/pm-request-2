@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f8f9fa">
+    <meta name="color-scheme" content="light dark">
     <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg">
     <title>Procurement Ticketing System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -10,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="/static/css/styles.css" rel="stylesheet">
 </head>
-<body class="bg-light">
+<body>
     <div class="app-container">
         <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
             <div class="container-fluid">
@@ -78,6 +80,7 @@
         // Notification control UI
         function setupNotifications() {
             const notificationButton = document.getElementById('notificationBtn');
+            if (!notificationButton) return;
             
             function updateButton() {
                 if (Notification.permission === 'granted') {
@@ -102,8 +105,34 @@
             updateButton();
         }
         
+        // Setup theme toggle functionality
+        function setupThemeToggle() {
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            if (!themeToggleBtn) return;
+            
+            // Check stored preference
+            const darkMode = localStorage.getItem('darkMode') === 'true';
+            
+            // Initialize button state
+            themeToggleBtn.innerHTML = darkMode ? '<i class="bi bi-sun"></i>' : '<i class="bi bi-moon"></i>';
+            themeToggleBtn.title = darkMode ? 'Switch to light mode' : 'Switch to dark mode';
+            
+            // This event is triggered by the ThemeManager class in shaders.js
+            document.addEventListener('themeChanged', function(e) {
+                themeToggleBtn.innerHTML = e.detail.darkMode ? 
+                    '<i class="bi bi-sun"></i>' : 
+                    '<i class="bi bi-moon"></i>';
+                themeToggleBtn.title = e.detail.darkMode ? 
+                    'Switch to light mode' : 
+                    'Switch to dark mode';
+            });
+        }
+        
         document.addEventListener('DOMContentLoaded', function() {
-            // Only setup notifications if supported
+            // Setup theme toggle
+            setupThemeToggle();
+            
+            // Setup notifications if supported
             if ('Notification' in window) {
                 setupNotifications();
             }

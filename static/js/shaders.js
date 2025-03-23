@@ -33,13 +33,91 @@ class ThemeManager {
   
   // Apply the selected theme to the UI
   applyTheme() {
+    // Toggle main class
     document.body.classList.toggle('dark-mode', this.darkMode);
     
-    // Update meta theme-color for mobile browsers
-    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-    if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', this.darkMode ? '#121212' : '#f8f9fa');
+    // Explicitly set background colors
+    document.body.style.backgroundColor = this.darkMode ? '#121212' : '#f8f9fa';
+    document.documentElement.style.backgroundColor = this.darkMode ? '#121212' : '#f8f9fa';
+    
+    // Force content wrapper to inherit background
+    const contentWrapper = document.querySelector('.content-wrapper');
+    if (contentWrapper) {
+      contentWrapper.style.backgroundColor = 'inherit';
     }
+    
+    // Update meta theme-color for mobile browsers
+    let metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (!metaThemeColor) {
+      metaThemeColor = document.createElement('meta');
+      metaThemeColor.setAttribute('name', 'theme-color');
+      document.head.appendChild(metaThemeColor);
+    }
+    metaThemeColor.setAttribute('content', this.darkMode ? '#121212' : '#f8f9fa');
+    
+    // Update all Bootstrap components that need manual updating
+    this.updateBootstrapComponents();
+    
+    // Trigger a custom event that other components can listen for
+    document.dispatchEvent(new CustomEvent('themeChanged', { 
+      detail: { darkMode: this.darkMode } 
+    }));
+  }
+  
+  // Update Bootstrap components that don't automatically respect dark mode
+  updateBootstrapComponents() {
+    // Manually update dropdowns
+    const dropdowns = document.querySelectorAll('.dropdown-menu');
+    dropdowns.forEach(dropdown => {
+      if (this.darkMode) {
+        dropdown.classList.add('dropdown-menu-dark');
+      } else {
+        dropdown.classList.remove('dropdown-menu-dark');
+      }
+    });
+    
+    // Update navbar if needed
+    const navbar = document.querySelector('.navbar');
+    if (navbar) {
+      if (this.darkMode) {
+        navbar.classList.remove('navbar-light', 'bg-white');
+        navbar.classList.add('navbar-dark', 'bg-dark');
+      } else {
+        navbar.classList.remove('navbar-dark', 'bg-dark');
+        navbar.classList.add('navbar-light', 'bg-white');
+      }
+    }
+    
+    // Update background class on main container elements
+    if (this.darkMode) {
+      document.querySelectorAll('.bg-light').forEach(el => {
+        el.classList.remove('bg-light');
+        el.classList.add('bg-dark');
+      });
+    } else {
+      document.querySelectorAll('.bg-dark').forEach(el => {
+        el.classList.remove('bg-dark');
+        el.classList.add('bg-light');
+      });
+    }
+    
+    // Apply specific styles for elements that need special handling
+    const elements = {
+      '.bg-white': this.darkMode ? '#1e1e1e' : '#ffffff',
+      '.bg-light': this.darkMode ? '#252525' : '#f8f9fa',
+      '.text-dark': this.darkMode ? '#f0f0f0' : '#212529'
+    };
+    
+    // Apply manual color overrides for elements that don't respect CSS variables
+    Object.entries(elements).forEach(([selector, color]) => {
+      document.querySelectorAll(selector).forEach(element => {
+        if (selector.includes('bg-')) {
+          element.style.backgroundColor = color;
+        } else if (selector.includes('text-')) {
+          element.style.color = color;
+        }
+      });
+    });
   }
   
   // Generate dynamic color variations
