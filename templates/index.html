@@ -1,61 +1,356 @@
 {% extends "base.html" %}
 
+{% block page_title %}Dashboard{% endblock %}
+{% block page_description %}Overview of all procurement requests and their statuses{% endblock %}
+
 {% block content %}
-    <div class="card mb-4">
+    <!-- Dashboard Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card bg-white shadow-sm rounded-3 p-3">
+                <div class="d-flex align-items-center">
+                    <div class="icon-box bg-primary-light rounded-circle p-3 me-3">
+                        <i class="bi bi-ticket fs-4 text-primary"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 text-muted">Total Requests</h6>
+                        <h3 class="fw-bold mb-0" id="totalTickets">{{ tickets|length }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card bg-white shadow-sm rounded-3 p-3">
+                <div class="d-flex align-items-center">
+                    <div class="icon-box bg-warning-light rounded-circle p-3 me-3">
+                        <i class="bi bi-hourglass-split fs-4 text-warning"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 text-muted">Pending</h6>
+                        <h3 class="fw-bold mb-0">{{ tickets|selectattr('status', 'equalto', 'Pending')|list|length }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card bg-white shadow-sm rounded-3 p-3">
+                <div class="d-flex align-items-center">
+                    <div class="icon-box bg-info-light rounded-circle p-3 me-3">
+                        <i class="bi bi-gear-fill fs-4 text-info"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 text-muted">In Progress</h6>
+                        <h3 class="fw-bold mb-0">{{ tickets|selectattr('status', 'equalto', 'In Progress')|list|length }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card bg-white shadow-sm rounded-3 p-3">
+                <div class="d-flex align-items-center">
+                    <div class="icon-box bg-success-light rounded-circle p-3 me-3">
+                        <i class="bi bi-check-circle fs-4 text-success"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 text-muted">Completed</h6>
+                        <h3 class="fw-bold mb-0">{{ tickets|selectattr('status', 'equalto', 'Completed')|list|length }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Requests by Status</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="statusChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Requests by Priority</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="priorityChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Controls -->
+    <div class="card shadow-sm mb-4">
         <div class="card-body">
-            <h2 class="card-title">New Request</h2>
-            <form method="POST">
-                <div class="mb-3">
-                    <label class="form-label">Project Name</label>
-                    <input type="text" class="form-control" name="project_name" required>
+            <div class="row g-3 align-items-center">
+                <div class="col-auto">
+                    <label class="col-form-label fw-medium">Filter:</label>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Materials Needed</label>
-                    <textarea class="form-control" name="materials" rows="3" required></textarea>
+                <div class="col-md-2">
+                    <select id="statusFilter" class="form-select form-select-sm">
+                        <option value="">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                    </select>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Urgency</label>
-                    <select class="form-select" name="urgency" required>
+                <div class="col-md-2">
+                    <select id="priorityFilter" class="form-select form-select-sm">
+                        <option value="">All Priorities</option>
                         <option value="Low">Low</option>
                         <option value="Medium">Medium</option>
                         <option value="High">High</option>
                     </select>
                 </div>
-                <button type="submit" class="btn btn-primary">Submit Request</button>
+                <div class="col-md-3">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Search...">
+                    </div>
+                </div>
+                <div class="col-auto ms-auto">
+                    <button id="resetFilters" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-x-circle me-1"></i>Reset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tickets List -->
+    <div class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold">All Requests</h5>
+            <a href="#newTicketForm" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-circle me-1"></i>New Request
+            </a>
+        </div>
+        
+        <div class="tickets-container" id="ticketsContainer">
+            {% for ticket in tickets %}
+                <div class="ticket-card" 
+                     data-status="{{ ticket.status }}"
+                     data-priority="{{ ticket.urgency }}"
+                     data-search="{{ ticket.project_name }} {{ ticket.materials }}">
+                    <div class="card shadow-sm mb-3 h-100 position-relative overflow-hidden {{ 'border-start border-5 border-danger' if ticket.urgency == 'High' }}">
+                        {% if ticket.urgency == 'High' %}
+                            <div class="priority-indicator"></div>
+                        {% endif %}
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <h5 class="card-title fw-bold mb-0">{{ ticket.project_name }}</h5>
+                                <div>
+                                    <span class="badge rounded-pill status-badge bg-{{ 'success' if ticket.status == 'Completed' else 'info' if ticket.status == 'In Progress' else 'secondary' }}">
+                                        <i class="bi bi-{{ 'check-circle' if ticket.status == 'Completed' else 'gear' if ticket.status == 'In Progress' else 'hourglass-split' }} me-1"></i>
+                                        {{ ticket.status }}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <p class="card-text">{{ ticket.materials }}</p>
+                            
+                            <div class="ticket-meta mt-3">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge rounded-pill bg-{{ 'danger' if ticket.urgency == 'High' else 'warning' if ticket.urgency == 'Medium' else 'info' }} me-2">
+                                        {{ ticket.urgency }}
+                                    </span>
+                                    <small class="text-muted">
+                                        <i class="bi bi-ticket me-1"></i>Ticket #{{ ticket.id }}
+                                    </small>
+                                </div>
+                                
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="ticket-dates">
+                                        <small class="text-muted d-block">
+                                            <i class="bi bi-calendar-event me-1"></i>Created: {{ ticket.created_at }}
+                                        </small>
+                                        <small class="text-muted d-block">
+                                            <i class="bi bi-arrow-clockwise me-1"></i>Updated: {{ ticket.updated_at }}
+                                        </small>
+                                    </div>
+                                    <a href="{{ url_for('edit_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-pencil me-1"></i>Edit
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- New Request Form -->
+    <div class="card shadow-sm mb-4" id="newTicketForm">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-plus-circle me-2"></i>Create New Request
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" class="needs-validation" novalidate>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Project Name</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
+                        <input type="text" class="form-control" name="project_name" required placeholder="Enter project name">
+                        <div class="invalid-feedback">Please provide a project name.</div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Materials Needed</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-list-check"></i></span>
+                        <textarea class="form-control" name="materials" rows="3" required placeholder="Describe materials needed in detail"></textarea>
+                        <div class="invalid-feedback">Please describe the materials needed.</div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-medium">Urgency</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-flag"></i></span>
+                        <select class="form-select" name="urgency" required>
+                            <option value="">Select urgency level</option>
+                            <option value="Low">Low - Within a month</option>
+                            <option value="Medium">Medium - Within two weeks</option>
+                            <option value="High">High - Within a week</option>
+                        </select>
+                        <div class="invalid-feedback">Please select an urgency level.</div>
+                    </div>
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-send me-2"></i>Submit Request
+                    </button>
+                </div>
             </form>
         </div>
     </div>
 
-    <h2 class="mb-3">Recent Requests</h2>
-    <div class="row row-cols-1 row-cols-md-2 g-4">
-        {% for ticket in tickets %}
-            <div class="col">
-                <div class="card h-100 mb-3">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <h5 class="card-title">{{ ticket.project_name }}</h5>
-                                <p class="card-text">{{ ticket.materials }}</p>
-                                <div class="d-flex gap-2 mb-2">
-                                    <span class="badge status-badge bg-{{ 'success' if ticket.status == 'Completed' else 'warning' if ticket.status == 'In Progress' else 'secondary' }}">
-                                        {{ ticket.status }}
-                                    </span>
-                                    <span class="badge status-badge bg-{{ 'danger' if ticket.urgency == 'High' else 'warning' if ticket.urgency == 'Medium' else 'info' }}">
-                                        {{ ticket.urgency }} Priority
-                                    </span>
-                                </div>
-                                <small class="text-muted">
-                                    Created: {{ ticket.created_at }} | 
-                                    Last updated: {{ ticket.updated_at }}
-                                </small>
-                            </div>
-                            <a href="{{ url_for('edit_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-outline-primary">
-                                Edit
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        {% endfor %}
-    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Form validation
+            const forms = document.querySelectorAll('.needs-validation');
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+            
+            // Filter functionality
+            const statusFilter = document.getElementById('statusFilter');
+            const priorityFilter = document.getElementById('priorityFilter');
+            const searchInput = document.getElementById('searchInput');
+            const resetBtn = document.getElementById('resetFilters');
+            const tickets = document.querySelectorAll('.ticket-card');
+            
+            function applyFilters() {
+                const status = statusFilter.value;
+                const priority = priorityFilter.value;
+                const search = searchInput.value.toLowerCase();
+                
+                tickets.forEach(ticket => {
+                    const ticketStatus = ticket.dataset.status;
+                    const ticketPriority = ticket.dataset.priority;
+                    const ticketSearch = ticket.dataset.search.toLowerCase();
+                    
+                    const statusMatch = status === '' || ticketStatus === status;
+                    const priorityMatch = priority === '' || ticketPriority === priority;
+                    const searchMatch = search === '' || ticketSearch.includes(search);
+                    
+                    if (statusMatch && priorityMatch && searchMatch) {
+                        ticket.style.display = '';
+                    } else {
+                        ticket.style.display = 'none';
+                    }
+                });
+                
+                updateFilterCounts();
+            }
+            
+            function updateFilterCounts() {
+                const visibleTickets = document.querySelectorAll('.ticket-card[style=""]').length;
+                document.getElementById('totalTickets').textContent = visibleTickets;
+            }
+            
+            function resetFilters() {
+                statusFilter.value = '';
+                priorityFilter.value = '';
+                searchInput.value = '';
+                tickets.forEach(ticket => ticket.style.display = '');
+                updateFilterCounts();
+            }
+            
+            statusFilter.addEventListener('change', applyFilters);
+            priorityFilter.addEventListener('change', applyFilters);
+            searchInput.addEventListener('input', applyFilters);
+            resetBtn.addEventListener('click', resetFilters);
+            
+            // Charts
+            const statusChart = new Chart(
+                document.getElementById('statusChart'),
+                {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Pending', 'In Progress', 'Completed'],
+                        datasets: [{
+                            data: [
+                                {{ tickets|selectattr('status', 'equalto', 'Pending')|list|length }},
+                                {{ tickets|selectattr('status', 'equalto', 'In Progress')|list|length }},
+                                {{ tickets|selectattr('status', 'equalto', 'Completed')|list|length }}
+                            ],
+                            backgroundColor: ['#6c757d', '#17a2b8', '#28a745']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                }
+            );
+            
+            const priorityChart = new Chart(
+                document.getElementById('priorityChart'),
+                {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Low', 'Medium', 'High'],
+                        datasets: [{
+                            data: [
+                                {{ tickets|selectattr('urgency', 'equalto', 'Low')|list|length }},
+                                {{ tickets|selectattr('urgency', 'equalto', 'Medium')|list|length }},
+                                {{ tickets|selectattr('urgency', 'equalto', 'High')|list|length }}
+                            ],
+                            backgroundColor: ['#17a2b8', '#ffc107', '#dc3545']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                }
+            );
+        });
+    </script>
 {% endblock %}

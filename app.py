@@ -1,6 +1,6 @@
 import json
 import threading
-from flask import Flask, render_template, request, redirect, url_for, Response
+from flask import Flask, render_template, request, redirect, url_for, Response, flash, session
 from datetime import datetime
 import sqlite3
 import os
@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'development-key-for-flask-session')
 
 # Database setup
 def get_db_connection():
@@ -108,15 +109,25 @@ def index():
 @app.route('/edit/<int:ticket_id>', methods=['GET', 'POST'])
 def edit_ticket(ticket_id):
     if request.method == 'POST':
-        # Verify PIN
-        if request.form['pin'] != os.getenv('EDIT_PIN'):
+        # Get the entered PIN and the expected PIN
+        entered_pin = request.form.get('pin', '')
+        expected_pin = os.getenv('EDIT_PIN', '')
+        
+        # Check if PIN matches
+        if entered_pin != expected_pin:
+            print(f"PIN mismatch: entered={entered_pin}, expected={expected_pin}")
+            flash('Invalid PIN. Changes not saved.', 'danger')
             return redirect(url_for('index'))
             
+        # Get form data
         project_name = request.form['project_name']
         materials = request.form['materials']
         urgency = request.form['urgency']
         status = request.form['status']
         
+        print(f"Updating ticket {ticket_id}: {project_name}, {urgency}, {status}")
+        
+        # Update the database
         conn = get_db_connection()
         conn.execute('''UPDATE tickets SET 
                         project_name = ?, 
@@ -128,6 +139,8 @@ def edit_ticket(ticket_id):
                      (project_name, materials, urgency, status, ticket_id))
         conn.commit()
         conn.close()
+        
+        print(f"Successfully updated ticket {ticket_id}")
         return redirect(url_for('index'))
     
     conn = get_db_connection()
@@ -137,15 +150,27 @@ def edit_ticket(ticket_id):
 
 @app.route('/delete/<int:ticket_id>', methods=['POST'])
 def delete_ticket(ticket_id):
-    # Verify PIN
-    if request.form['pin'] != os.getenv('EDIT_PIN'):
+    # Get the entered PIN and the expected PIN
+    entered_pin = request.form.get('pin', '')
+    expected_pin = os.getenv('EDIT_PIN', '')
+    
+    # Check if PIN matches
+    if entered_pin != expected_pin:
+        print(f"PIN mismatch on delete: entered={entered_pin}, expected={expected_pin}")
+        flash('Invalid PIN. Ticket not deleted.', 'danger')
         return redirect(url_for('index'))
+    
+    print(f"Deleting ticket {ticket_id}")
     
     conn = get_db_connection()
     conn.execute('DELETE FROM tickets WHERE id = ?', (ticket_id,))
     conn.commit()
     conn.close()
+    
+    print(f"Successfully deleted ticket {ticket_id}")
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5003, debug=True, ssl_context=('cert.pem', 'key.pem'))
+    # Comment out SSL for testing to avoid connection issues
+    # app.run(host='0.0.0.0', port=5003, debug=True, ssl_context=('cert.pem', 'key.pem'))
+    app.run(host='0.0.0.0', port=5003, debug=True)

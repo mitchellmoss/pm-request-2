@@ -1,48 +1,164 @@
 {% extends "base.html" %}
 
+{% block page_title %}Edit Request #{{ ticket.id }}{% endblock %}
+{% block page_description %}Update request details and track progress{% endblock %}
+
 {% block content %}
-    <div class="card">
-        <div class="card-body">
-            <h2 class="card-title mb-4">Edit Request</h2>
-            <form method="POST">
-                <div class="mb-3">
-                    <label class="form-label" for="project_name">Project Name</label>
-                    <input type="text" class="form-control" id="project_name" name="project_name" value="{{ ticket['project_name'] }}" required title="Enter the project name" aria-label="Project Name">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pencil-square me-2"></i>Edit Request
+                    </h5>
+                    <span class="badge rounded-pill bg-{{ 'success' if ticket.status == 'Completed' else 'info' if ticket.status == 'In Progress' else 'secondary' }}">
+                        <i class="bi bi-{{ 'check-circle' if ticket.status == 'Completed' else 'gear' if ticket.status == 'In Progress' else 'hourglass-split' }} me-1"></i>
+                        {{ ticket.status }}
+                    </span>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label" for="materials">Materials Needed</label>
-                    <textarea class="form-control" id="materials" name="materials" rows="3" required title="Enter the required materials" aria-label="Materials Needed">{{ ticket['materials'] }}</textarea>
+                <div class="card-body">
+                    <form method="POST" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="project_name">Project Name</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-briefcase"></i></span>
+                                <input type="text" class="form-control" id="project_name" name="project_name" value="{{ ticket.project_name }}" required title="Enter the project name" aria-label="Project Name">
+                                <div class="invalid-feedback">Please provide a project name.</div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="materials">Materials Needed</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-list-check"></i></span>
+                                <textarea class="form-control" id="materials" name="materials" rows="4" required title="Enter the required materials" aria-label="Materials Needed">{{ ticket.materials }}</textarea>
+                                <div class="invalid-feedback">Please describe the materials needed.</div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium" for="urgency">Urgency</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-flag"></i></span>
+                                    <select class="form-select" id="urgency" name="urgency" required title="Select the urgency level" aria-label="Urgency Level">
+                                        <option value="Low" {% if ticket.urgency == 'Low' %}selected{% endif %}>Low - Within a month</option>
+                                        <option value="Medium" {% if ticket.urgency == 'Medium' %}selected{% endif %}>Medium - Within two weeks</option>
+                                        <option value="High" {% if ticket.urgency == 'High' %}selected{% endif %}>High - Within a week</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please select an urgency level.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium" for="status">Status</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-check2-circle"></i></span>
+                                    <select class="form-select" id="status" name="status" required title="Select the current status" aria-label="Request Status">
+                                        <option value="Pending" {% if ticket.status == 'Pending' %}selected{% endif %}>Pending</option>
+                                        <option value="In Progress" {% if ticket.status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                                        <option value="Completed" {% if ticket.status == 'Completed' %}selected{% endif %}>Completed</option>
+                                    </select>
+                                    <div class="invalid-feedback">Please select a status.</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-medium" for="edit_pin">Admin PIN</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                                <input type="password" class="form-control" id="edit_pin" name="pin" required title="Enter your PIN to edit" aria-label="Edit PIN" placeholder="Enter your admin PIN">
+                                <div class="invalid-feedback">PIN is required to save changes.</div>
+                            </div>
+                            <small class="text-muted mt-1">Required to authorize changes</small>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save me-2"></i>Save Changes
+                            </button>
+                            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label" for="urgency">Urgency</label>
-                    <select class="form-select" id="urgency" name="urgency" required title="Select the urgency level" aria-label="Urgency Level">
-                        <option value="Low" {% if ticket.urgency == 'Low' %}selected{% endif %}>Low</option>
-                        <option value="Medium" {% if ticket.urgency == 'Medium' %}selected{% endif %}>Medium</option>
-                        <option value="High" {% if ticket.urgency == 'High' %}selected{% endif %}>High</option>
-                    </select>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-info-circle me-2"></i>Request Details
+                    </h5>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label" for="status">Status</label>
-                    <select class="form-select" id="status" name="status" required title="Select the current status" aria-label="Request Status">
-                        <option value="Pending" {% if ticket.status == 'Pending' %}selected{% endif %}>Pending</option>
-                        <option value="In Progress" {% if ticket.status == 'In Progress' %}selected{% endif %}>In Progress</option>
-                        <option value="Completed" {% if ticket.status == 'Completed' %}selected{% endif %}>Completed</option>
-                    </select>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span class="text-muted">Ticket ID:</span>
+                            <span class="fw-medium">#{{ ticket.id }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span class="text-muted">Created:</span>
+                            <span class="fw-medium">{{ ticket.created_at }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span class="text-muted">Last Updated:</span>
+                            <span class="fw-medium">{{ ticket.updated_at }}</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span class="text-muted">Priority:</span>
+                            <span class="badge rounded-pill bg-{{ 'danger' if ticket.urgency == 'High' else 'warning' if ticket.urgency == 'Medium' else 'info' }}">
+                                {{ ticket.urgency }}
+                            </span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            <span class="text-muted">Status:</span>
+                            <span class="badge rounded-pill bg-{{ 'success' if ticket.status == 'Completed' else 'info' if ticket.status == 'In Progress' else 'secondary' }}">
+                                {{ ticket.status }}
+                            </span>
+                        </li>
+                    </ul>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label" for="edit_pin">Edit PIN</label>
-                    <input type="password" class="form-control" id="edit_pin" name="pin" required title="Enter your PIN to edit" aria-label="Edit PIN">
+            </div>
+            
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-white text-danger">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-trash me-2"></i>Delete Request
+                    </h5>
                 </div>
-                <button type="submit" class="btn btn-primary">Save Changes</button>
-                <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Cancel</a>
-            </form>
-            <form method="POST" action="{{ url_for('delete_ticket', ticket_id=ticket.id) }}" class="mt-3" onsubmit="return confirm('Are you sure you want to delete this ticket?');">
-                <div class="mb-3">
-                    <label class="form-label" for="delete_pin">Enter PIN to Delete</label>
-                    <input type="password" class="form-control" id="delete_pin" name="pin" required title="Enter your PIN to delete" aria-label="Delete PIN">
+                <div class="card-body">
+                    <p class="text-muted small mb-3">This action cannot be undone. Please ensure you want to permanently remove this request.</p>
+                    <form method="POST" action="{{ url_for('delete_ticket', ticket_id=ticket.id) }}" onsubmit="return confirm('Are you sure you want to permanently delete this ticket?');">
+                        <div class="mb-3">
+                            <label class="form-label fw-medium" for="delete_pin">Admin PIN</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-shield-lock"></i></span>
+                                <input type="password" class="form-control" id="delete_pin" name="pin" required title="Enter your PIN to delete" aria-label="Delete PIN" placeholder="Enter your admin PIN">
+                            </div>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-2"></i>Delete Request
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                <button type="submit" class="btn btn-danger">Delete Ticket</button>
-            </form>
+            </div>
         </div>
     </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Form validation
+            const forms = document.querySelectorAll('.needs-validation');
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        });
+    </script>
 {% endblock %}

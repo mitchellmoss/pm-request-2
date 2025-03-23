@@ -6,38 +6,90 @@
     <link rel="icon" type="image/svg+xml" href="/static/images/favicon.svg">
     <title>Procurement Ticketing System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="/static/css/styles.css" rel="stylesheet">
 </head>
 <body class="bg-light">
-    <div class="container py-4">
-        <header class="mb-4">
-            <h1 class="display-4">Procurement Request System</h1>
-            <hr>
-        </header>
-        {% block content %}{% endblock %}
+    <div class="app-container">
+        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm sticky-top">
+            <div class="container-fluid">
+                <a class="navbar-brand d-flex align-items-center" href="/">
+                    <i class="bi bi-ticket-fill me-2 text-primary"></i>
+                    <span class="fw-bold">PM-Request</span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/"><i class="bi bi-house-door me-1"></i> Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#newTicketForm"><i class="bi bi-plus-circle me-1"></i> New Request</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="content-wrapper">
+            <div class="container py-4">
+                <header class="mb-4">
+                    <h1 class="h2 fw-bold">{% block page_title %}Procurement Request System{% endblock %}</h1>
+                    <p class="text-muted">{% block page_description %}Manage your procurement requests and track their status{% endblock %}</p>
+                </header>
+                
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible fade show mb-4" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+        
+        <footer class="footer mt-auto py-3 bg-white border-top">
+            <div class="container text-center text-muted">
+                <small>Procurement Request System &copy; 2025</small>
+            </div>
+        </footer>
     </div>
+    
+    <button id="notificationBtn" class="floating-btn notification-btn" title="Notification settings">
+        <i class="bi bi-bell"></i>
+    </button>
+    <button id="themeToggleBtn" class="floating-btn theme-btn" title="Toggle dark/light mode">
+        <i class="bi bi-moon"></i>
+    </button>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="/static/js/shaders.js"></script>
     <script>
         // Notification control UI
         function setupNotifications() {
-            const notificationButton = document.createElement('button');
-            notificationButton.className = 'btn btn-secondary position-fixed bottom-0 end-0 m-3';
-            notificationButton.textContent = '🔔 Enable Notifications';
+            const notificationButton = document.getElementById('notificationBtn');
             
             function updateButton() {
                 if (Notification.permission === 'granted') {
-                    notificationButton.textContent = '🔔 Notifications Enabled';
-                    notificationButton.disabled = true;
-                    notificationButton.title = 'Browser notifications are enabled';
+                    notificationButton.innerHTML = '<i class="bi bi-bell-fill"></i>';
+                    notificationButton.classList.add('enabled');
+                    notificationButton.title = 'Notifications are enabled';
                 } else if (Notification.permission === 'denied') {
-                    notificationButton.textContent = '🔔 Notifications Blocked';
-                    notificationButton.disabled = true;
-                    notificationButton.title = 'Permission is blocked in browser settings. Reset in page info.';
+                    notificationButton.innerHTML = '<i class="bi bi-bell-slash"></i>';
+                    notificationButton.title = 'Notifications are blocked in browser settings';
                 } else {
-                    notificationButton.textContent = '🔔 Enable Notifications';
-                    notificationButton.disabled = false;
-                    notificationButton.title = 'Click to enable browser notifications';
+                    notificationButton.innerHTML = '<i class="bi bi-bell"></i>';
+                    notificationButton.title = 'Enable browser notifications';
                 }
             }
             
@@ -47,7 +99,6 @@
                 }
             });
             
-            document.body.appendChild(notificationButton);
             updateButton();
         }
         
@@ -67,29 +118,25 @@
                     eventSource.close();
                 }
                 
-                console.log('Attempting to connect to SSE...');
-                const protocol = window.location.protocol;
+                console.log('Connecting to SSE...');
+                // Use http protocol explicitly since we disabled SSL for testing
                 const hostname = window.location.hostname;
                 const port = window.location.port;
-                const sseUrl = `${protocol}//${hostname}:${port}/events`;
-                console.log('Connecting to SSE URL:', sseUrl);
+                const sseUrl = `http://${hostname}:${port}/events`;
                 eventSource = new EventSource(sseUrl, { withCredentials: true });
                 
                 eventSource.onopen = function() {
-                    console.log('SSE connection established successfully');
+                    console.log('SSE connection established');
                     reconnectAttempts = 0;
                 };
                 
                 eventSource.onmessage = function(event) {
                     try {
-                        console.log('Received SSE event:', event);
                         if (event.data === ':heartbeat') {
-                            console.log('Heartbeat received');
                             return;
                         }
                         
                         const data = JSON.parse(event.data);
-                        console.log('Parsed notification data:', data);
                         
                         if (Notification.permission === 'granted') {
                             const notification = new Notification(`Ticket #${data.id}: ${data.title}`, {
@@ -111,19 +158,12 @@
                 };
                 
                 eventSource.onerror = function(error) {
-                    console.error('SSE connection error:', error);
-                    console.log('ReadyState:', eventSource.readyState);
-                    console.log('Current EventSource state:', {
-                        url: eventSource.url,
-                        readyState: eventSource.readyState,
-                        withCredentials: eventSource.withCredentials
-                    });
+                    console.error('SSE connection error');
                     eventSource.close();
                     
                     const reconnectDelay = Math.min(1000 * Math.pow(2, reconnectAttempts), maxReconnectDelay);
                     reconnectAttempts++;
                     
-                    console.log(`Attempting to reconnect in ${reconnectDelay}ms...`);
                     setTimeout(connectSSE, reconnectDelay);
                 };
             }
