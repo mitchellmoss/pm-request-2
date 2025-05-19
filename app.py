@@ -91,9 +91,17 @@ def index():
         ticket_dict = dict(ticket)
         conn.close()
         
-        # Send email notification
+        # Send email and SMS notifications
         from utils.email_sender import send_ticket_notification
         send_ticket_notification(ticket_dict)
+        
+        # Send SMS notification if configured
+        try:
+            from utils.sms_sender import send_ticket_sms
+            send_ticket_sms(ticket_dict, "created")
+        except ImportError:
+            print("SMS module not available or not configured")
+            
         notify_listeners({
             'id': ticket_dict['id'],
             'title': ticket_dict['project_name'],
@@ -140,6 +148,22 @@ def edit_ticket(ticket_id):
         conn.commit()
         conn.close()
         
+        # Get updated ticket data for notifications
+        conn = get_db_connection()
+        updated_ticket = conn.execute('SELECT * FROM tickets WHERE id = ?', (ticket_id,)).fetchone()
+        ticket_dict = dict(updated_ticket)
+        conn.close()
+        
+        # SMS notifications only sent for new tickets, not updates
+        print("Ticket updated, no SMS notification sent as per configuration")
+            
+        # Send browser notification for update
+        notify_listeners({
+            'id': ticket_dict['id'],
+            'title': ticket_dict['project_name'],
+            'message': f"Ticket updated: {ticket_dict['project_name']} (Status: {ticket_dict['status']})"
+        })
+        
         print(f"Successfully updated ticket {ticket_id}")
         return redirect(url_for('index'))
     
@@ -162,10 +186,25 @@ def delete_ticket(ticket_id):
     
     print(f"Deleting ticket {ticket_id}")
     
+    # Get ticket data before deleting for notification
     conn = get_db_connection()
+    ticket = conn.execute('SELECT * FROM tickets WHERE id = ?', (ticket_id,)).fetchone()
+    ticket_dict = dict(ticket)
+    
+    # Delete the ticket
     conn.execute('DELETE FROM tickets WHERE id = ?', (ticket_id,))
     conn.commit()
     conn.close()
+    
+    # SMS notifications only sent for new tickets, not deletions
+    print("Ticket deleted, no SMS notification sent as per configuration")
+        
+    # Send browser notification for deletion
+    notify_listeners({
+        'id': ticket_dict['id'],
+        'title': ticket_dict['project_name'],
+        'message': f"Ticket deleted: {ticket_dict['project_name']}"
+    })
     
     print(f"Successfully deleted ticket {ticket_id}")
     return redirect(url_for('index'))
