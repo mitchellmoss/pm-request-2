@@ -1,5 +1,6 @@
 import json
 import threading
+import queue
 from flask import Flask, render_template, request, redirect, url_for, Response, flash, session
 from datetime import datetime
 import sqlite3
@@ -33,12 +34,33 @@ with app.app_context():
     conn.commit()
     conn.close()
 
-# Keep track of event listeners
+# Keep track of legacy event listeners
 listeners = set()
+
+class SSEAnnouncer:
+    """Simple broadcaster for server-sent events."""
+
+    def __init__(self):
+        self.listeners = []
+        self.lock = threading.Lock()
+
+    def listen(self):
+        q = queue.Queue()
+        with self.lock:
+            self.listeners.append(q)
+        return q
+
+    def broadcast(self, data):
+        with self.lock:
+            for q in list(self.listeners):
+                q.put(data)
+
+announcer = SSEAnnouncer()
 
 def notify_listeners(ticket):
     for listener in listeners:
         listener.send_sse_data(ticket)
+    announcer.broadcast(ticket)
 
 @app.route('/events')
 def events():
@@ -57,6 +79,33 @@ def events():
             listeners.remove(listener)
     
     return Response(event_stream(), mimetype="text/event-stream")
+
+@app.route('/stream')
+def stream():
+    """SSE stream endpoint for procurement updates."""
+    last_id = request.headers.get('Last-Event-ID')
+
+    def event_stream():
+        # Currently we don't store events, so missed events are ignored
+        heartbeat_id = 0
+        client_queue = announcer.listen()
+        try:
+            while True:
+                try:
+                    message = client_queue.get(block=True, timeout=30)
+                    yield f"data: {json.dumps(message)}\n\n"
+                except queue.Empty:
+                    heartbeat_id += 1
+                    yield f": heartbeat {heartbeat_id}\n\n"
+        except GeneratorExit:
+            with announcer.lock:
+                if client_queue in announcer.listeners:
+                    announcer.listeners.remove(client_queue)
+
+    response = Response(event_stream(), mimetype="text/event-stream")
+    response.headers['Cache-Control'] = 'no-cache'
+    response.headers['X-Accel-Buffering'] = 'no'
+    return response
 
 class sse_generator:
     def __init__(self):
