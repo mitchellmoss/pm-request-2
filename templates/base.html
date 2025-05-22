@@ -168,12 +168,26 @@
                         const data = JSON.parse(event.data);
                         
                         if (Notification.permission === 'granted') {
+                            // Attempt to vibrate device for mobile users if supported
+                            if ('vibrate' in navigator) {
+                                navigator.vibrate([200, 100, 200]);
+                            }
+                            
                             const notification = new Notification(`Ticket #${data.id}: ${data.title}`, {
                                 body: data.message,
                                 icon: '/static/images/favicon.svg',
                                 tag: `ticket-${data.id}`,
-                                requireInteraction: true
+                                requireInteraction: true,
+                                silent: false // Enable sound notification
                             });
+                            
+                            // Play custom sound for notifications
+                            try {
+                                const audio = new Audio('/static/notification.mp3');
+                                audio.play();
+                            } catch (error) {
+                                console.warn('Could not play notification sound', error);
+                            }
                             
                             notification.onclick = function() {
                                 window.focus();
