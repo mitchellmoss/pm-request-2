@@ -522,15 +522,34 @@ body.dark-mode canvas {
   .tickets-container {
     grid-template-columns: 1fr;
   }
-  
+
   .stat-card {
     margin-bottom: 1rem;
   }
-  
+
   .floating-btn {
     width: 42px;
     height: 42px;
     font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .btn {
+    padding-top: 0.625rem;
+    padding-bottom: 0.625rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-check {
+    padding-left: 1.8rem;
+    margin-bottom: 1rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  body {
+    padding-bottom: 5rem;
   }
 }
 
@@ -542,6 +561,23 @@ body.dark-mode canvas {
 
 .fade-in {
   animation: fadeIn 0.3s ease-in;
+}
+
+.procurement-title {
+  font-size: 1.5rem;
+}
+
+.procurement-instruction {
+  font-size: 1rem;
+}
+
+@media (max-width: 576px) {
+  .procurement-title {
+    font-size: 1.25rem !important;
+  }
+  .procurement-instruction {
+    font-size: 0.875rem !important;
+  }
 }
 
 /* Form Validation Styles */
