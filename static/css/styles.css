@@ -160,10 +160,24 @@ body.dark-mode {
 
 .ticket-card {
   transition: transform 0.2s;
+  max-width: 100%;
 }
 
 .ticket-card:hover {
   transform: translateY(-3px);
+}
+
+/* Prevent text overflow in ticket cards */
+.ticket-card .card {
+  overflow: hidden;
+}
+
+.ticket-card .card-title,
+.ticket-card .card-text {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 /* Mobile-specific ticket card adjustments */
@@ -179,6 +193,15 @@ body.dark-mode {
   
   .ticket-card .card-title {
     font-size: 1.1rem;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+  
+  .ticket-card .card-text {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
   }
   
   .ticket-card .badge {
@@ -552,6 +575,7 @@ body.dark-mode canvas {
   .tickets-container {
     grid-template-columns: 1fr;
     padding: 0 0.5rem;
+    overflow-x: hidden;
   }
 
   .stat-card {
@@ -567,6 +591,7 @@ body.dark-mode canvas {
   /* Ensure cards don't overflow on smaller screens */
   .ticket-card .card {
     max-width: 100%;
+    overflow-x: hidden;
   }
   
   /* Better layout for ticket meta on mobile */
