@@ -166,6 +166,36 @@ body.dark-mode {
   transform: translateY(-3px);
 }
 
+/* Mobile-specific ticket card adjustments */
+@media (max-width: 400px) {
+  .tickets-container {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .ticket-card .card-body {
+    padding: 1rem;
+  }
+  
+  .ticket-card .card-title {
+    font-size: 1.1rem;
+  }
+  
+  .ticket-card .badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+  }
+  
+  .ticket-dates small {
+    font-size: 0.75rem;
+  }
+  
+  .ticket-card .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8125rem;
+  }
+}
+
 .priority-indicator {
   position: absolute;
   top: 0;
@@ -521,6 +551,7 @@ body.dark-mode canvas {
 @media (max-width: 768px) {
   .tickets-container {
     grid-template-columns: 1fr;
+    padding: 0 0.5rem;
   }
 
   .stat-card {
@@ -531,6 +562,22 @@ body.dark-mode canvas {
     width: 42px;
     height: 42px;
     font-size: 1.1rem;
+  }
+  
+  /* Ensure cards don't overflow on smaller screens */
+  .ticket-card .card {
+    max-width: 100%;
+  }
+  
+  /* Better layout for ticket meta on mobile */
+  .ticket-card .ticket-meta .d-flex {
+    flex-direction: column;
+    align-items: start !important;
+  }
+  
+  .ticket-card .ticket-meta .btn {
+    margin-top: 0.5rem;
+    align-self: flex-end;
   }
 }
 
